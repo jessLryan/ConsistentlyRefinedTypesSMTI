@@ -1,7 +1,9 @@
 package com.mycompany.consistentlyrefinedsmti;
 
+import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
+import java.util.TreeMap;
 
 /*
  * To change this license header, choose License Headers in Project Properties.
@@ -90,5 +92,19 @@ public class Agent implements Comparable<Agent> {
             }
         }
         return false;
+    }
+    
+    
+    public TreeMap<Integer,Agent> getPositionsOfCandidates(ArrayList<Agent> group) {
+        TreeMap<Integer, Agent> positions = new TreeMap<Integer, Agent>();
+        for (Agent a : group) {
+            for (int i=0;i<prefList.size();i++) {
+                List<Integer> tie = prefList.get(i);
+                if (tie.contains(a.getNumber())) {
+                    positions.put(i, a);
+                }
+            }
+        }
+        return positions;
     }
 }

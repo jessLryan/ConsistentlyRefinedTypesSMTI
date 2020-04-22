@@ -9,7 +9,12 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
+import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.TreeMap;
 
 /**
  *
@@ -34,15 +39,20 @@ public class TypesCalculator {
         //group each gender into lists of agents with identical preference lists
         List<ArrayList<Agent>> groupedMen = groupAgentsIdenticalPrefs(men);
         List<ArrayList<Agent>> groupedWomen = groupAgentsIdenticalPrefs(women);
+        
+        
+        System.out.println("number of groups of men " + groupedMen.size());
+        System.out.println("number of groups of women " + groupedWomen.size());
+        
 //        System.out.println("finding types of men");
         //from grouped lists, find minimum number of types needed to describe the
         //instance by checking which agents in a group are considered equal
         //(are in a tie) in all members of the opposite gender's pref lists
-        List<ArrayList<Agent>> typedMen = findTypes(groupedMen, women);
+        findTypes(groupedMen, women);
 //        System.out.println("finding types of women");
-        List<ArrayList<Agent>> typedWomen = findTypes(groupedWomen, men);
-        System.out.println("number of types of men " + typedMen.size());
-        System.out.println("number of types of women " + typedWomen.size());
+        findTypes(groupedWomen, men);
+        System.out.println("number of types of men " + groupedMen.size());
+        System.out.println("number of types of women " + groupedWomen.size());
 //        System.out.println("types of men");
 //        for (ArrayList<Agent> type : typedMen) {
 //            System.out.println("type");
@@ -63,39 +73,45 @@ public class TypesCalculator {
 
     
     //find minimum number of types needed to descibr the instance
-    public static List<ArrayList<Agent>> findTypes(List<ArrayList<Agent>> groupedAgents, List<Agent> oppositeGenderAgents) {
-        List<ArrayList<Agent>> groupedAgentsReturned = new ArrayList<>();
-        //for each group, split the agents in the group into types so that agents
-        //in a type are considered equal by all members of the opposite gender
-        for (ArrayList<Agent> group : groupedAgents) {
-//            System.out.println("agents in group");
-//            for (Agent a:group) {
-//                System.out.print(a.getNumber()+" ");
-//            }
-//            System.out.println();
-            ArrayList<Agent> groupCopy = (ArrayList<Agent>) group.clone();
-            ArrayList<Agent> type = new ArrayList<>();
-            Agent currentAgent = groupCopy.get(0);
-            type.add(currentAgent);
-            groupCopy.remove(currentAgent);
-            //while there are still agents in the group, find all agents in the
-            //group which are considered equal to the first agent left in the
-            //group, and put these agents in a type
-            while (!groupCopy.isEmpty()) {
-                Agent agentI = groupCopy.get(0);
-                if (areAgentsConsideredIdentical(currentAgent, agentI, oppositeGenderAgents)) {
-                    type.add(agentI);
-                    groupCopy.remove(agentI);
-                } else {
-                    groupedAgentsReturned.add(type);
-                    type = new ArrayList<>();
-                    type.add(agentI);
-                    groupCopy.remove(agentI);
+    public static void findTypes(List<ArrayList<Agent>> groupedAgents, List<Agent> oppositeGenderAgents) {
+        boolean changeWasMade = false;
+        Iterator<ArrayList<Agent>> it = groupedAgents.iterator();
+        while(it.hasNext()){
+            ArrayList<Agent> group = it.next();
+            
+            for (Agent a : oppositeGenderAgents) {
+                TreeMap<Integer, Agent> positions = a.getPositionsOfCandidates(group);
+                int currentKey = positions.firstKey();
+                ArrayList<Agent> currentGroup = new ArrayList<>();
+                for (Map.Entry<Integer, Agent> entry : positions.entrySet()) {
+                    if (entry.getKey() == currentKey) {
+                        currentGroup.add(entry.getValue());
+                    } else {
+                        changeWasMade = true;
+                        groupedAgents.add(currentGroup);
+                        currentGroup = new ArrayList<>();
+                        currentGroup.add(entry.getValue());
+                        if (Objects.equals(positions.lastKey(), entry.getKey())) {
+                            groupedAgents.add(currentGroup);
+                        }
+
+                    }
+                    currentKey = entry.getKey();
+                }
+                if (changeWasMade) {
+                    groupedAgents.remove(group);
+                    break;
                 }
             }
-            groupedAgentsReturned.add(type);
+            
+        
         }
-        return groupedAgentsReturned;
+        if (!changeWasMade) {
+            return;
+        }
+        else {
+            findTypes(groupedAgents, oppositeGenderAgents);
+        }
     }
 
     //check if two agents are viewed equally (in a tie) by all agents of the 
